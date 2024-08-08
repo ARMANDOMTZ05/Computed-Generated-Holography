@@ -1,0 +1,90 @@
+import torch
+import os
+from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
+from random import randint
+
+class Hologram:
+    def __init__(self, Path, 
+                 iterations: int,
+                 device: torch.device = 'cpu',
+                 save: bool = False,
+                 preview: bool = False) -> None:
+        self.filepath = Path
+        self.projections = self.load_images()
+        self.device = device
+        self.iterations = iterations
+
+        self.Holograms = []
+
+        for i in range(self.projections.shape[0]):
+            self.Phase = self.Gerchberg_Saxton(projection = self.projections[i, :, :])
+            Temp_hologram = self.Binarization().cpu()
+            self.Holograms.append(Temp_hologram)
+            if save:
+                self.save(Temp_hologram, i)
+
+        if preview:
+            num = randint(0,self.projections.shape[0])
+            plt.imshow(torch.log(torch.abs(torch.fft.fft2(self.Holograms[num])) ** 2) + 1, cmap= 'gray')
+            plt.show()
+
+
+    def load_images(self):
+        image_list = []
+        # Iterate through all files in the folder
+        for filename in sorted(os.listdir(str(self.filepath))):
+            if filename.endswith(('.jpg', '.jpeg', '.png', '.bmp')):
+                # Construct the full file path
+                file_path = os.path.join(self.filepath, filename)
+                    
+                # Open the image using PIL
+                img = Image.open(file_path)
+                    
+                    
+                # Convert the image to a NumPy array
+                img_array = np.array(img)
+                    
+                # Append the array to the list
+                image_list.append(img_array)
+            
+        # Convert the list of arrays to a NumPy array
+        images_tensor = torch.tensor(np.array(image_list))
+            
+        return images_tensor
+
+    def Gerchberg_Saxton(self, projection):
+        Amplitude = projection.to(self.device)
+        A = torch.fft.ifft2(Amplitude).to(self.device)
+        for _ in range(self.iterations):
+            B = abs(1.0) * torch.exp(1j * torch.angle(A))
+            C = torch.fft.fft2(B)
+            D = torch.abs(Amplitude) * torch.exp(1j * torch.angle(C))
+            A = torch.fft.ifft2(D)
+
+        return torch.angle(A)
+    
+    def Binarization(self):
+        V = abs(1.0) * torch.exp(1j * self.Phase)
+        Amp = torch.abs(V) / torch.max(torch.abs(V))
+        Phi = torch.angle(V)
+        pp = torch.asin(Amp)
+        qq = Phi
+
+        return 0.5 + 0.5*torch.sign(torch.cos(pp) + torch.cos(qq))
+
+    
+    def save(self, hologram, i):
+        Image.fromarray(hologram.numpy() * 255).convert('1').save(f'.\Hologram1\H{i:04}.png')
+
+
+PATH = r'.\Example1'
+
+Holo = Hologram(Path= PATH,
+                iterations= 100,
+                device= 'cuda' if torch.cuda.is_available() else 'cpu',
+                save = False,
+                preview= True)
+
+
