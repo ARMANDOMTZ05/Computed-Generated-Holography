@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import ndimage
 import cv2
 from PIL import Image
+import random
 
 class Image_config:
     def __init__(self, sino,
@@ -11,7 +12,12 @@ class Image_config:
                  intensity_scale: float ,
                  size_scale: float,
                  save: bool = False,
-                 angle_deg: float = 0.0):
+                 angle_deg: float = 0.0,
+                 preview: bool = False):
+        
+        if not isinstance(sino, vam.geometry.Sinogram):
+            Exception("sinogram is not of type vamtoolbox.geometry.Sinogram")
+            
         self.sino = sino
         self.angle_deg = angle_deg
         self.sinogram = self.sino.array
@@ -44,6 +50,9 @@ class Image_config:
             self.Image_list.append(arr)
             if self.save:
                 Image.fromarray(arr, mode= 'L').save(f'./Example1/{i:04}.png')
+        
+        if preview:
+            self.plot()
 
     def _scaleSize(self):
         new_height = int(self.mod_sino.shape[0]*self.size_scale)
@@ -66,13 +75,13 @@ class Image_config:
         S_u = image.shape[1]
         S_v = image.shape[0]
     
-        u1, u2 = int(self.N_u/2 - S_u/2), int(self.N_u/2 + S_u/2)
-        v1, v2 = int(self.N_v/2), int(self.N_v/2 + S_v)
+        u1, u2 = int(self.N_u/4 - S_u/2), int(self.N_u/4 + S_u/2)
+        v1, v2 = int(self.N_v/4 -S_v/2), int(self.N_v/4 + S_v/2)
 
-        if u1 < 0 or u2 > self.N_u:
-            raise Exception("Image could not be inserted because it is either too large in the u-dimension or the offset causes it to extend out of the input screen size")
-        if v1 < 0 or v2 > self.N_v:
-            raise Exception("Image could not be inserted because it is either too large in the v-dimension or the offset causes it to extend out of the input screen size")
+        if u1 < 0 or u2 > self.N_u/2:
+            raise Exception("Image could not be inserted because it is too large in the u-dimension")
+        if v1 < 0 or v2 > self.N_v/2:
+            raise Exception("Image could not be inserted because it is too large in the v-dimension")
             
         image_out[v1:v2,u1:u2] = image
 
@@ -89,26 +98,12 @@ class Image_config:
         indices_v = np.argwhere(collapsed_v_sinogram != 0.0)
         first_u, last_u = int(indices_u[0]), int(indices_u[-1])
         first_v, last_v = int(indices_v[0]), int(indices_v[-1])
-
-        # if first_u == 0 or last_u == sinogram.shape[0]:
-        #     mod_sinogram = sinogram
-        # elif first_v == 0 or last_v == sinogram.shape[2]:
-        #     mod_sinogram = sinogram
-        # else:
-        #     mod_sinogram = sinogram[first_v:last_v,:,first_u:last_u]
         mod_sinogram = self.mod_sino[first_u:last_u,:,first_v:last_v]
         
         return mod_sinogram
-
-
-sino = vam.geometry.loadVolume(file_name=r'.\Optics_Test.sino')
-
-iconfig = Image_config(sino = sino,
-                       Image_dims=(1920, 1080),
-                       intensity_scale= 2.0,
-                       size_scale= 2.0,
-                       save = False)
-
-plt.plot(iconfig.Image_list[90][539,:])
-#plt.colorbar()
-plt.show()
+    
+    def plot(self):
+        num = random.randint(0,len(self.Image_list))
+        plt.imshow(self.Image_list[num], cmap = 'gray')
+        plt.axis('off')
+        plt.show()

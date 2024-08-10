@@ -4,13 +4,35 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
+from tqdm import tqdm
 
 class Hologram:
-    def __init__(self, Path, 
+    def __init__(self, Path: str, 
                  iterations: int,
+                 path_to_save: str,
                  device: torch.device = 'cpu',
                  save: bool = False,
                  preview: bool = False) -> None:
+        """
+        Create Holograms based on 8-bit PNG, JPEG and BMP set of images or image. 
+
+        Parameters
+
+        * Path : str
+
+        * iterations : int
+            Number of iterations in the Gerchberg-Saxton Algorithm
+
+        * path_to_save : str
+
+        * device : torch.device
+            Device where it is going to be processed
+
+        * save : bool
+
+        * preview : Plot the hologram
+        """
+
         self.filepath = Path
         self.projections = self.load_images()
         self.device = device
@@ -18,7 +40,7 @@ class Hologram:
 
         self.Holograms = []
 
-        for i in range(self.projections.shape[0]):
+        for i in tqdm(range(self.projections.shape[0]), desc = 'Converting projections into holograms...'):
             self.Phase = self.Gerchberg_Saxton(projection = self.projections[i, :, :])
             Temp_hologram = self.Binarization().cpu()
             self.Holograms.append(Temp_hologram)
@@ -28,6 +50,7 @@ class Hologram:
         if preview:
             num = randint(0,self.projections.shape[0])
             plt.imshow(torch.log(torch.abs(torch.fft.fft2(self.Holograms[num])) ** 2) + 1, cmap= 'gray')
+            plt.axis('off')
             plt.show()
 
 
@@ -77,14 +100,3 @@ class Hologram:
     
     def save(self, hologram, i):
         Image.fromarray(hologram.numpy() * 255).convert('1').save(f'.\Hologram1\H{i:04}.png')
-
-
-PATH = r'.\Example1'
-
-Holo = Hologram(Path= PATH,
-                iterations= 100,
-                device= 'cuda' if torch.cuda.is_available() else 'cpu',
-                save = False,
-                preview= True)
-
-
