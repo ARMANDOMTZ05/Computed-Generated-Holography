@@ -37,6 +37,7 @@ class Hologram:
         self.projections = self.load_images()
         self.device = device
         self.iterations = iterations
+        self.path_to_save = path_to_save
 
         self.Holograms = []
 
@@ -99,4 +100,4 @@ class Hologram:
 
     
     def save(self, hologram, i):
-        Image.fromarray(hologram.numpy() * 255).convert('1').save(f'.\Hologram1\H{i:04}.png')
+        Image.fromarray(hologram.numpy() * 255).convert('1').save(os.path.join(self.path_to_save, f'{i:04}.png'))

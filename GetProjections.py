@@ -5,9 +5,11 @@ from scipy import ndimage
 import cv2
 from PIL import Image
 import random
+import os
 
 class Image_config:
-    def __init__(self, sino,
+    def __init__(self, path_to_save: str,
+                 sino,
                  Image_dims: tuple,
                  intensity_scale: float ,
                  size_scale: float,
@@ -49,7 +51,7 @@ class Image_config:
             arr = self._insertImage(image = self.mod_sino[:,i,:].T, image_out= image_out)
             self.Image_list.append(arr)
             if self.save:
-                Image.fromarray(arr, mode= 'L').save(f'./Example1/{i:04}.png')
+                Image.fromarray(arr, mode= 'L').save(os.path.join(path_to_save, f'{i:04}.png'))
         
         if preview:
             self.plot()
