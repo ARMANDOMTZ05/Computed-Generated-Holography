@@ -2,6 +2,10 @@
 ## Description
 Code for generation of binary amplitude hologram based on the K. Mithcell, et al. (2016) using the Gerchberg–Saxton algorithm for phase retrieval
 
+<p align="center">
+  <img src="Resources/Heart.gif" />
+</p>
+
 ### Gerchberg–Saxton pseudocode algorithm
 
 
